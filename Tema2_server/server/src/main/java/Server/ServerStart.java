@@ -1,0 +1,142 @@
+package Server;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.List;
+
+import Model.CitireInstitutii;
+import Model.CitireUser;
+import Model.FabricaSculptura;
+import Model.FabricaTablou;
+import Model.Institutie;
+import Model.OperaDeArtaPlastica;
+import Model.SalvareUser;
+import Model.SculpturaGalerieArta;
+import Model.SculpturaMuzeu;
+import Model.TablouGalerieArta;
+import Model.TablouMuzeu;
+import Model.User;
+
+public class ServerStart {
+
+	private static ServerSocket server;
+	private static int port = 9876;
+
+	public static void main(String[] args) throws IOException, ClassNotFoundException {
+		server = new ServerSocket(port);
+
+		while (true) {
+			System.out.println("Waiting...");
+			Socket socket = server.accept();
+			ObjectInputStream data = new ObjectInputStream(socket.getInputStream());
+
+			Object[] clientData = (Object[]) data.readObject();
+			String cmd = ((String) clientData[0]).toLowerCase().trim();
+			System.out.println("Comanda " + cmd + " primita");
+
+			ObjectOutputStream outStream = new ObjectOutputStream(socket.getOutputStream());
+			
+			if ("get_all_users".equals(cmd)) {
+				CitireUser citireUser = new CitireUser();
+				List<User> users = citireUser.getUsers();
+				outStream.writeObject(users);
+			} else if ("delete_user".equals(cmd)) {
+				User user = (User) clientData[1];
+				new SalvareUser().remove(user);
+				outStream.writeObject("S-a sters user-ul");
+			} else if ("edit_user".equals(cmd)) { 
+				User user1 = (User) clientData[1];
+				String nume = (String) clientData[2];
+				String parola = (String) clientData[3];
+				new SalvareUser().edit(user1, nume, parola);
+				outStream.writeObject("S-a editat user-ul " + nume);
+			} else if ("create_user".equals(cmd)) {
+				User user2 = (User) clientData[1];
+				new SalvareUser().saveUser(user2);
+				outStream.writeObject("S-a creat user-ul " + user2.getUsername());
+			} else if ("get_all_inst".equals(cmd)) {
+				CitireInstitutii citireInstitutii = new CitireInstitutii();
+				List<Institutie> institutii = citireInstitutii.getInstitutii();
+				outStream.writeObject(institutii);
+			} else if ("delete_tablou_muzeu".equals(cmd)) {
+				OperaDeArtaPlastica opera = (OperaDeArtaPlastica) clientData[1];
+				new FabricaTablou().stergereTablouMuzeu(opera);
+				outStream.writeObject("S-a sters tabloul");
+			} else if ("editare_tablou_muzeu".equals(cmd)) {
+				OperaDeArtaPlastica opera = (OperaDeArtaPlastica) clientData[1];
+				TablouMuzeu tablouNou = (TablouMuzeu) clientData[2];
+				new FabricaTablou().editareTablouMuzeu(opera, tablouNou);
+				outStream.writeObject("S-a editat tabloul " + tablouNou.getTitlu());
+			} else if ("creare_tablou_muzeu".equals(cmd)) {
+				String titlu = (String) clientData[1];
+				String artist = (String) clientData[2];
+				Integer anRealizare = (Integer) clientData[3];
+				String genPictura = (String) clientData[4];
+				String tehnica = (String) clientData[5];
+				Integer idInst = (Integer) clientData[6];
+				new FabricaTablou().buildTablou("Muzeu", titlu, artist, anRealizare, genPictura, tehnica, 0, idInst);
+				outStream.writeObject("S-a creat tabloul " + titlu);
+			}  else if ("delete_tablou_galerie".equals(cmd)) {
+				OperaDeArtaPlastica opera = (OperaDeArtaPlastica) clientData[1];
+				new FabricaTablou().stergereTablouGalerie(opera);
+				outStream.writeObject("S-a sters tabloul");
+			} else if ("editare_tablou_galerie".equals(cmd)) {
+				OperaDeArtaPlastica opera = (OperaDeArtaPlastica) clientData[1];
+				TablouGalerieArta tablouNou = (TablouGalerieArta) clientData[2];
+				new FabricaTablou().editareTablouGalerie(opera, tablouNou);
+				outStream.writeObject("S-a editat tabloul " + tablouNou.getTitlu());
+			} else if ("creare_tablou_galerie".equals(cmd)) {
+				String titlu = (String) clientData[1];
+				String artist = (String) clientData[2];
+				Integer anRealizare = (Integer) clientData[3];
+				String genPictura = (String) clientData[4];
+				String tehnica = (String) clientData[5];
+				Integer pret = (Integer) clientData[6];
+				Integer idInst = (Integer) clientData[7];
+				new FabricaTablou().buildTablou("GalerieArta", titlu, artist, anRealizare, genPictura, tehnica, pret, idInst);
+				outStream.writeObject("S-a creat tabloul " + titlu);
+			} else if ("creare_sculptura_muzeu".equals(cmd)) {
+				String titlu = (String) clientData[1];
+				String artist = (String) clientData[2];
+				Integer anRealizare = (Integer) clientData[3];
+				String tipSculptura = (String) clientData[4];
+				Integer idInst = (Integer) clientData[5];
+				new FabricaSculptura().buildSculptura("Muzeu", titlu, artist, anRealizare, tipSculptura, 0, idInst);
+				outStream.writeObject("S-a creat sculptura " + titlu);
+			} else if ("editare_sculptura_muzeu".equals(cmd)) {
+				OperaDeArtaPlastica opera = (OperaDeArtaPlastica) clientData[1];
+				SculpturaMuzeu newSculptura = (SculpturaMuzeu) clientData[2];
+				new FabricaSculptura().editareSculpturaMuzeu(opera, newSculptura);
+				outStream.writeObject("S-a editat sculptura " + newSculptura.getTitlu());
+			} else if ("delete_sculptura_muzeu".equals(cmd)) {
+				OperaDeArtaPlastica opera = (OperaDeArtaPlastica) clientData[1];
+				new FabricaSculptura().stergereSculpturaMuzeu(opera);
+				outStream.writeObject("S-a sters sculptura");
+			} else if ("creare_sculptura_galerie".equals(cmd)) {
+				String titlu = (String) clientData[1];
+				String artist = (String) clientData[2];
+				Integer anRealizare = (Integer) clientData[3];
+				String tipSculptura = (String) clientData[4];
+				Integer pret = (Integer) clientData[5];
+				Integer idInst = (Integer) clientData[6];
+				new FabricaSculptura().buildSculptura("GalerieArta", titlu, artist, anRealizare, tipSculptura, pret, idInst);
+				outStream.writeObject("S-a creat sculptura " + titlu);
+			} else if ("editare_sculptura_galerie".equals(cmd)) {
+				OperaDeArtaPlastica opera = (OperaDeArtaPlastica) clientData[1];
+				SculpturaGalerieArta newSculptura = (SculpturaGalerieArta) clientData[2];
+				new FabricaSculptura().editareSculpturaGalerie(opera, newSculptura);
+				outStream.writeObject("S-a editat sculptura " + newSculptura.getTitlu());
+			} else if ("delete_sculptura_galerie".equals(cmd)) {
+				OperaDeArtaPlastica opera = (OperaDeArtaPlastica) clientData[1];
+				new FabricaSculptura().stergereSculpturaGalerie(opera);
+				outStream.writeObject("S-a sters sculptura");
+			} else if ("exit".equals(cmd)) {
+				outStream.writeObject("Closing server...");
+				System.exit(0);
+			}
+		}
+	}
+}
